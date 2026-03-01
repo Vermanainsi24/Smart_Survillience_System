@@ -1,41 +1,51 @@
-import { useEffect, useState } from "react";
-import { getAlerts } from "../services/api";
-import AlertCard from "../components/AlertCard";
-import StatsCard from "../components/StatsCard";
+import Sidebar from "../components/Sidebar";
+import Topbar from "../components/Topbar";
+import StatCard from "../components/StatsCard";
+import LiveFeed from "../components/Livefeed";
+import AlertChart from "../components/AlertChart";
 
 export default function Dashboard() {
-  const [alerts, setAlerts] = useState([]);
-
-  useEffect(() => {
-    const fetchAlerts = async () => {
-      const res = await getAlerts();
-      setAlerts(res.data);
-    };
-
-    fetchAlerts();
-    const interval = setInterval(fetchAlerts, 5000); // refresh every 5 sec
-    return () => clearInterval(interval);
-  }, []);
+  // Alerts state (would be fetched from API)
+  const alerts = [
+    { event: "Weapon Detected", camera_id: "CAM_01", confidence: 0.92, timestamp: "03:10 AM" },
+    { event: "Fire Detected", camera_id: "CAM_02", confidence: 0.88, timestamp: "03:15 AM" }
+  ];
 
   const weaponCount = alerts.filter(a => a.event.includes("Weapon")).length;
   const fireCount = alerts.filter(a => a.event.includes("Fire")).length;
   const fightCount = alerts.filter(a => a.event.includes("Fight")).length;
 
   return (
-    <div style={{ background: "#121212", minHeight: "100vh", padding: "20px" }}>
-      <h1 style={{ color: "white" }}>Smart Surveillance Dashboard</h1>
+    <div className="app-layout">
+      <Sidebar alerts={alerts} />
+      
+      <div className="main-content">
+        <Topbar />
+        
+        <main className="dashboard-viewport">
+          {/* Top Row: Operational Overview Stats */}
+          <div className="stats-grid">
+            <StatCard title="Weapon Alerts" value={weaponCount} type="critical" />
+            <StatCard title="Fire Alerts" value={fireCount} type="pending" />
+            <StatCard title="Fight Alerts" value={fightCount} type="total" />
+            <StatCard title="System Health" value="100%" type="allocated" />
+          </div>
 
-      <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
-        <StatsCard title="Weapon Alerts" value={weaponCount} />
-        <StatsCard title="Fire Alerts" value={fireCount} />
-        <StatsCard title="Fight Alerts" value={fightCount} />
+          {/* Middle Row: Live Feed & Incident Distribution */}
+          <div className="analytics-grid">
+            <div className="feed-section">
+              <LiveFeed />
+            </div>
+            <div className="chart-section">
+              <AlertChart 
+                weapon={weaponCount} 
+                fire={fireCount} 
+                fight={fightCount} 
+              />
+            </div>
+          </div>
+        </main>
       </div>
-
-      <h2 style={{ color: "white" }}>Recent Alerts</h2>
-
-      {alerts.map((alert, index) => (
-        <AlertCard key={index} alert={alert} />
-      ))}
     </div>
   );
 }
