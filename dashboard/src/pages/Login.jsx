@@ -1,11 +1,13 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { FaShieldAlt, FaLock, FaUser } from "react-icons/fa";
 import axios from "axios";
+import { AuthContext } from "../context/AuthContext";
 
 export default function Login() {
 
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,11 +38,10 @@ export default function Login() {
 
       if (data?.access_token) {
 
-        // Save token
-        localStorage.setItem("token", data.access_token);
-        localStorage.setItem("role", data.role || "user");
+        // Use context login
+        login(data.access_token, data.role);
 
-        // Redirect to dashboard
+        // Redirect
         navigate("/");
 
       } else {
@@ -65,7 +66,6 @@ export default function Login() {
 
       <div className="terminal-card">
 
-        {/* HEADER */}
         <div className="terminal-header">
 
           <div className="shield-icon">
@@ -81,7 +81,6 @@ export default function Login() {
 
         </div>
 
-        {/* BODY */}
         <div className="terminal-body">
 
           {error && (
@@ -120,7 +119,6 @@ export default function Login() {
 
         </div>
 
-        {/* FOOTER */}
         <div className="terminal-footer">
           <span>© 2026 SafeSight Security Systems</span>
         </div>

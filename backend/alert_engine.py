@@ -49,12 +49,13 @@ class AlertEngine:
         cv2.imwrite(snapshot_path, frame)
 
         alert = {
-            "event": f"{event_type} Detected",
-            "confidence": round(confidence, 2),
-            "severity": severity,
-            "camera_id": camera_id,
-            "timestamp": datetime.now().strftime("%H:%M:%S")
-        }
+    "event": f"{event_type} Detected",
+    "confidence": round(confidence, 2),
+    "severity": severity,
+    "camera_id": camera_id,
+    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    "image": snapshot_path
+}
 
         # Escalation rules
         if severity in ["HIGH", "CRITICAL","MEDIUM"]:

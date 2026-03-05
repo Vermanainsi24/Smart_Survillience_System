@@ -1,105 +1,70 @@
-import { FaVideo, FaShieldAlt, FaFire, FaChartLine, FaCog } from "react-icons/fa";
+import { FaVideo, FaShieldAlt, FaFire, FaChartLine, FaCog, FaLock } from "react-icons/fa";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Sidebar({ alerts = [] }) {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const weaponAlerts = alerts.filter(a =>
-    a.event?.toLowerCase().includes("weapon")
-  ).length;
+  // Dynamic alert counts for forensic badges
+  const weaponAlerts = alerts.filter(a => a.event?.toLowerCase().includes("weapon")).length;
+  const fireAlerts = alerts.filter(a => a.event?.toLowerCase().includes("fire")).length;
 
-  const fireAlerts = alerts.filter(a =>
-    a.event?.toLowerCase().includes("fire")
-  ).length;
+  const isActive = (path) => location.pathname === path ? "active-nav" : "";
 
   return (
-    <div className="sidebar">
-
-      {/* Brand */}
-      <div className="brand-area">
-        <div className="brand-icon">🛡</div>
-        <h2 className="brand-name">SAFE SIGHT</h2>
+    <div className="terminal-sidebar-gradient">
+      {/* Brand Identity with Glow */}
+      <div className="sidebar-brand-aligned">
+        <div className="brand-shield-glow">
+          <FaShieldAlt />
+        </div>
+        <div className="brand-text-block">
+          <h2>SAFE SIGHT</h2>
+          <div className="system-status-mini">
+            <span className="pulse-dot-green"></span>
+            SECURE TERMINAL
+          </div>
+        </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="nav-menu">
-
-        <div className="nav-section">Monitoring</div>
-
-        <button className="nav-item active">
-          <FaVideo className="glass-icon blue" />
-          <span>Live Feed</span>
-          <span className="live-pulse"></span>
+      <nav className="terminal-nav-shaded">
+        <div className="nav-group-label">OPERATIONAL MONITORING</div>
+        
+        <button className={`nav-link-shaded ${isActive("/")}`} onClick={() => navigate("/")}>
+          <div className="icon-wrapper blue-glow"><FaVideo /></div>
+          <span>Live Surveillance</span>
         </button>
 
-        <button className="nav-item">
-          <FaShieldAlt className="glass-icon amber" />
-          <span>Weapon Alerts</span>
-
-          {weaponAlerts > 0 && (
-            <span className="alert-count">{weaponAlerts}</span>
-          )}
+        <button className={`nav-link-shaded ${isActive("/alerts/weapon")}`} onClick={() => navigate("/alerts/weapon")}>
+          <div className="icon-wrapper amber-glow"><FaLock /></div>
+          <span>Weapon Archive</span>
+          {weaponAlerts > 0 && <span className="terminal-badge-red">{weaponAlerts}</span>}
         </button>
 
-        <button className="nav-item">
-          <FaFire className="glass-icon red" />
-          <span>Fire Alerts</span>
-
-          {fireAlerts > 0 && (
-            <span className="alert-count">{fireAlerts}</span>
-          )}
+        <button className={`nav-link-shaded ${isActive("/alerts/fire")}`} onClick={() => navigate("/alerts/fire")}>
+          <div className="icon-wrapper red-glow"><FaFire /></div>
+          <span>Fire Detection</span>
+          {fireAlerts > 0 && <span className="terminal-badge-red">{fireAlerts}</span>}
         </button>
 
-        <div className="nav-section">System</div>
+        <div className="nav-group-label">SYSTEM INTELLIGENCE</div>
 
-        <button className="nav-item">
-          <FaChartLine className="glass-icon gray" />
-          <span>Analytics</span>
+        <button className={`nav-link-shaded ${isActive("/analytics")}`} onClick={() => navigate("/analytics")}>
+          <div className="icon-wrapper indigo-glow"><FaChartLine /></div>
+          <span>Threat Analytics</span>
         </button>
 
-        <button className="nav-item">
-          <FaCog className="glass-icon gray" />
-          <span>Settings</span>
+        <button className="nav-link-shaded">
+          <div className="icon-wrapper slate-glow"><FaCog /></div>
+          <span>Configurations</span>
         </button>
-
       </nav>
 
-      <div className="sidebar-divider"></div>
-
-      {/* Recent Alerts */}
-      <div className="recent-alerts-container">
-
-        <h4 className="recent-title">Recent Incidents</h4>
-
-        <div className="recent-alerts">
-
-          {alerts.length === 0 ? (
-            <p className="no-alerts">System Clear</p>
-          ) : (
-            alerts.slice(0, 5).map((alert, index) => {
-
-              const isFire = alert.event?.toLowerCase().includes("fire");
-
-              return (
-                <div key={index} className="recent-alert-item">
-
-                  <div className={`status-glow ${isFire ? "fire" : "shield"}`}></div>
-
-                  <div className="alert-text">
-                    <p className="recent-event">{alert.event}</p>
-
-                    <small className="camera-tag">
-                      {alert.camera_id || "CAM-01"}
-                    </small>
-                  </div>
-
-                </div>
-              );
-            })
-          )}
-
-        </div>
-
-      </div>
-
+     <div className="sidebar-footer-elite">
+  <div className="footer-separator"></div>
+  <p>© 2026 <span>SafeSight AI</span></p>
+  <div className="system-version">v2.4.0-STABLE</div>
+</div>
     </div>
   );
 }

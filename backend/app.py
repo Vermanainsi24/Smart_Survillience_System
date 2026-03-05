@@ -2,30 +2,48 @@ import sys
 import os
 import cv2
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
-# Allow project imports
+from backend.auth import authenticate_user, create_access_token
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from inference.main_survillience import run_surveillance, alerts
 
 
-# =========================
-# FASTAPI INIT
-# =========================
-
+# CREATE APP ONLY ONCE
 app = FastAPI(title="SAFE SIGHT Surveillance API")
 
 
+# SNAPSHOT STATIC FOLDER
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+SNAPSHOT_DIR = os.path.join(BASE_DIR, "snapshots")
+
+print("Snapshots folder:", SNAPSHOT_DIR)
+
+app.mount("/snapshots", StaticFiles(directory=SNAPSHOT_DIR), name="snapshots")
+
+
 # =========================
-# CORS (React Frontend)
+# LOGIN MODEL
+# =========================
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+# =========================
+# CORS
 # =========================
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # change later to frontend URL
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,7 +51,7 @@ app.add_middleware(
 
 
 # =========================
-# VIDEO STREAM GENERATOR
+# VIDEO STREAM
 # =========================
 
 VIDEO_SOURCE = "demo.mp4"
@@ -44,7 +62,7 @@ def generate_frames():
     cap = cv2.VideoCapture(VIDEO_SOURCE)
 
     if not cap.isOpened():
-        print("❌ Unable to open video source")
+        print("Unable to open video source")
 
     while True:
 
@@ -54,28 +72,20 @@ def generate_frames():
             cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
             continue
 
-        # 🔥 RUN AI SURVEILLANCE PIPELINE
         frame = run_surveillance(frame)
 
-        # Encode frame
         ret, buffer = cv2.imencode(".jpg", frame)
 
         if not ret:
             continue
 
-        frame_bytes = buffer.tobytes()
-
         yield (
             b"--frame\r\n"
             b"Content-Type: image/jpeg\r\n\r\n"
-            + frame_bytes +
-            b"\r\n"
+            + buffer.tobytes()
+            + b"\r\n"
         )
 
-
-# =========================
-# VIDEO STREAM ENDPOINT
-# =========================
 
 @app.get("/video-feed")
 def video_feed():
@@ -87,19 +97,54 @@ def video_feed():
 
 
 # =========================
-# ALERTS API
+# ALERTS
 # =========================
 
 @app.get("/alerts")
 def get_alerts():
 
     return {
-        "alerts": alerts[-10:]  # return last 10 alerts
+        "alerts": alerts[-10:]
+    }
+
+
+@app.get("/alerts/history")
+def alert_history(type: str = None):
+
+    if type:
+        return [
+            a for a in alerts
+            if type.lower() in a["event"].lower()
+        ]
+
+    return alerts
+
+
+# =========================
+# LOGIN
+# =========================
+
+@app.post("/login")
+def login(user: LoginRequest):
+
+    authenticated = authenticate_user(user.email, user.password)
+
+    if not authenticated:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    token = create_access_token({
+        "sub": authenticated["email"],
+        "role": authenticated["role"]
+    })
+
+    return {
+        "access_token": token,
+        "role": authenticated["role"]
     }
 
 
 # =========================
-# HEALTH CHECK
+# ROOT
 # =========================
 
 @app.get("/")
