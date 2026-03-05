@@ -1,12 +1,12 @@
-import sys
 import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 import cv2
-from detectors.fire import FireDetector
-from detectors.weapon import WeaponDetector
+
+from inference.detectors.fire import FireDetector
+from inference.detectors.weapon import WeaponDetector
+# from inference.detectors.fight import FightDetector
+
 from backend.alert_engine import AlertEngine
+
 
 # =========================
 # INITIALIZATION
@@ -25,71 +25,44 @@ VIDEO_SOURCE = os.path.join(BASE_DIR, "demo.mp4")
 
 
 # =========================
-# MAIN SURVEILLANCE LOOP
+# SURVEILLANCE PROCESSOR
 # =========================
 
-def run_surveillance():
+def run_surveillance(frame):
 
-    cap = cv2.VideoCapture(VIDEO_SOURCE)
+    # Resize frame
+    frame = cv2.resize(frame, (960, 540))
 
-    if not cap.isOpened():
-        print("❌ Unable to open video source")
-        return
+    # =========================
+    # DETECTION
+    # =========================
 
-    print("🔥 SAFE SIGHT Surveillance Started...")
+    frame, fire_alerts = fire_detector.detect(frame)
+    frame, weapon_alerts = weapon_detector.detect(frame)
+    # frame, fight_alerts = fight_detector.detect(frame)
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            continue
-        # Resize video frame
-        frame = cv2.resize(frame, (960, 540))
+    all_alerts = fire_alerts + weapon_alerts
 
-        # =========================
-        # DETECTION PHASE
-        # =========================
+    # =========================
+    # ALERT ENGINE
+    # =========================
 
-        frame, fire_alerts = fire_detector.detect(frame)
-        frame, weapon_alerts = weapon_detector.detect(frame)
-        # frame, fight_alerts = fight_detector.detect(frame)
+    for alert in all_alerts:
 
-        all_alerts = fire_alerts + weapon_alerts
+        processed = alert_engine.process_alert(
+            event_type=alert["event"].replace(" Detected", ""),
+            confidence=alert["confidence"],
+            frame=frame,
+            camera_id="CAM_01"
+        )
 
-        # =========================
-        # ALERT PROCESSING
-        # =========================
+        if processed:
+            alerts.append(processed)
 
-        for alert in all_alerts:
+            # keep only latest alerts
+            if len(alerts) > 50:
+                alerts.pop(0)
 
-            processed = alert_engine.process_alert(
-                event_type=alert["event"].replace(" Detected", ""),
-                confidence=alert["confidence"],
-                frame=frame,
-                camera_id="CAM_01"
-            )
+            print("🚨 ALERT:", processed)
 
-            if processed:
-                alerts.append(processed)
-                print("🚨 ALERT:", processed)
-
-        # =========================
-        # DISPLAY FRAME
-        # =========================
-        cv2.namedWindow("SAFE SIGHT - Multi Threat Detection", cv2.WINDOW_NORMAL)
-        cv2.resizeWindow("SAFE SIGHT - Multi Threat Detection", 960, 540)
-        cv2.imshow("SAFE SIGHT - Multi Threat Detection", frame)
-
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
-
-    cap.release()
-    cv2.destroyAllWindows()
-
-
-# =========================
-# ENTRY POINT
-# =========================
-
-if __name__ == "__main__":
-    run_surveillance()
+    return frame
