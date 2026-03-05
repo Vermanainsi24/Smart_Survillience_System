@@ -1,26 +1,46 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { FaShieldAlt, FaLock, FaUser } from "react-icons/fa";
+import axios from "axios";
 
 export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (email === "admin" && password === "admin") {
-      navigate("/");
-    } else {
-      setError("Unauthorized access attempt detected.");
-      setTimeout(() => setError(""), 3000);
+  const handleLogin = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await axios.post(
+        "https://tamie-aglint-slightly.ngrok-free.dev/login",
+        {
+          email: email,
+          password: password,
+        }
+      );
+
+      if (response.data.access_token) {
+        navigate("/");
+        localStorage.setItem("token", response.data.access_token);
+        localStorage.setItem("role", response.data.role);
+        
+      } else {
+        setError("Unauthorized access attempt detected.");
+      }
+    } catch (err) {
+      setError("Connection to security server failed.");
     }
+
+    setLoading(false);
   };
 
   return (
     <div className="login-viewport">
       <div className="terminal-card">
-        {/* Header Section */}
         <div className="terminal-header">
           <div className="shield-icon">
             <FaShieldAlt />
@@ -32,10 +52,9 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Input Section */}
         <div className="terminal-body">
           {error && <div className="error-alert">{error}</div>}
-          
+
           <div className="input-field">
             <FaUser className="field-icon" />
             <input
@@ -54,12 +73,15 @@ export default function Login() {
             />
           </div>
 
-          <button className="initialize-btn" onClick={handleLogin}>
-            INITIALIZE SESSION
+          <button
+            className="initialize-btn"
+            onClick={handleLogin}
+            disabled={loading}
+          >
+            {loading ? "AUTHENTICATING..." : "INITIALIZE SESSION"}
           </button>
         </div>
 
-        {/* Footer Section */}
         <div className="terminal-footer">
           <span>© 2026 SafeSight Security Systems</span>
         </div>
