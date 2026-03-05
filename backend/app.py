@@ -7,6 +7,9 @@ from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from pydantic import BaseModel
+
+
 
 from backend.auth import authenticate_user, create_access_token
 
@@ -37,6 +40,12 @@ class LoginRequest(BaseModel):
     password: str
 
 
+
+class CameraRequest(BaseModel):
+    source: str
+
+
+
 # =========================
 # CORS
 # =========================
@@ -55,23 +64,30 @@ app.add_middleware(
 # =========================
 
 VIDEO_SOURCE = "demo.mp4"
+cap=None
 
 
 def generate_frames():
 
-    cap = cv2.VideoCapture(VIDEO_SOURCE)
+    global cap, VIDEO_SOURCE
+
+    # Initialize camera if not started
+    if cap is None:
+        cap = cv2.VideoCapture(VIDEO_SOURCE)
 
     if not cap.isOpened():
-        print("Unable to open video source")
+        print("❌ Camera not accessible:", VIDEO_SOURCE)
+        return
 
     while True:
 
         success, frame = cap.read()
 
         if not success:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            print("⚠ Frame not received")
             continue
 
+        # run AI inference
         frame = run_surveillance(frame)
 
         ret, buffer = cv2.imencode(".jpg", frame)
@@ -79,12 +95,36 @@ def generate_frames():
         if not ret:
             continue
 
+        frame_bytes = buffer.tobytes()
+        print("Reading from:", VIDEO_SOURCE)
+
         yield (
             b"--frame\r\n"
             b"Content-Type: image/jpeg\r\n\r\n"
-            + buffer.tobytes()
-            + b"\r\n"
+            + frame_bytes +
+            b"\r\n"
         )
+
+
+
+@app.post("/set-camera")
+def set_camera(req: CameraRequest):
+
+    global VIDEO_SOURCE, cap
+
+    VIDEO_SOURCE = req.source
+
+    if cap:
+        cap.release()
+
+    cap = cv2.VideoCapture(VIDEO_SOURCE)
+
+    if not cap.isOpened():
+        raise HTTPException(status_code=400, detail="Camera not accessible")
+
+    print("Camera switched to:", VIDEO_SOURCE)
+
+    return {"message": "Camera source updated"}
 
 
 @app.get("/video-feed")
@@ -155,3 +195,20 @@ def root():
         "video_stream": "/video-feed",
         "alerts_endpoint": "/alerts"
     }
+
+
+@app.post("/set-camera")
+def set_camera(req: CameraRequest):
+    global VIDEO_SOURCE, cap
+
+    VIDEO_SOURCE = req.source
+
+    if cap:
+        cap.release()
+
+    cap = cv2.VideoCapture(VIDEO_SOURCE)
+
+    if not cap.isOpened():
+        raise HTTPException(status_code=400, detail="Camera not accessible")
+
+    return {"message": "Camera source updated"}
