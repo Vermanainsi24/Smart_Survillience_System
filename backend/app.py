@@ -63,7 +63,7 @@ app.add_middleware(
 # VIDEO STREAM
 # =========================
 
-VIDEO_SOURCE = "demo.mp4"
+VIDEO_SOURCE = "test.mp4"
 cap=None
 
 

@@ -21,7 +21,7 @@ alert_engine = AlertEngine()
 alerts = []
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-VIDEO_SOURCE = os.path.join(BASE_DIR, "demo.mp4")
+VIDEO_SOURCE = os.path.join(BASE_DIR, "test.mp4")
 
 
 # =========================
