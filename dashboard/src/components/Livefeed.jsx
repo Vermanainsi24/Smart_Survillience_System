@@ -32,7 +32,7 @@ export default function LiveFeed() {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        source: "test.mp4"
+        source: "demo.mp4"
       })
     });
 

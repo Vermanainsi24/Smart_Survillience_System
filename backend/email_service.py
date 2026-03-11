@@ -12,7 +12,8 @@ SMTP_PORT = 587
 
 SENDER_EMAIL ="nainsiverma2528@gmail.com"
 SENDER_PASSWORD="ajjynzbndfxrrdaj"
-ADMIN_EMAIL="nainasingh2528@gmail.com"
+ADMIN_EMAIL="parulsingh8684@gmail.com"
+# parulsingh8684@gmail.com
 
 
 # ==============================

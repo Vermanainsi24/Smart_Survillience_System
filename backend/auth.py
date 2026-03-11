@@ -18,6 +18,7 @@ fake_users_db = {
 
 
 def verify_password(plain, hashed):
+    plain=plain[:72]
     return pwd_context.verify(plain, hashed)
 
 
